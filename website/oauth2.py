@@ -60,7 +60,9 @@ class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
 
         print(f"AuthorizationCodeGrant.authenticate_user: {authorization_code}")
 
-        return User.query.get(authorization_code.user_id)
+        token = User.query.get(authorization_code.user_id)
+        print(f"AuthorizationCodeGrant.token?: {token}")
+        return token
 
 
 class PasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
@@ -86,7 +88,9 @@ class RefreshTokenGrant(grants.RefreshTokenGrant):
 
         print(f"RefreshTokenGrant.authenticate_user: {credential}")
 
-        return User.query.get(credential.user_id)
+        token = User.query.get(credential.user_id)
+        print(f"RefreshTokenGrant.token?: {token}")
+        return token
 
     def revoke_old_credential(self, credential):
         credential.revoked = True

@@ -1,3 +1,8 @@
+# See: 
+
+# https://github.com/authlib/example-oidc-server
+# https://docs.authlib.org/en/latest/flask/2/openid-connect.html
+
 from website.app import create_app
 
 
