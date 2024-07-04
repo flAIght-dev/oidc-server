@@ -81,6 +81,48 @@ authorization = AuthorizationServer(
 )
 require_oauth = ResourceProtector()
 
+######### OIDC Connect
+
+from authlib.oidc.core import UserInfo
+from authlib.oidc.core import grants as oidc_grants
+
+class OIDCAuthorizationCodeGrant(AuthorizationCodeGrant):
+    def save_authorization_code(self, code, request):
+        # openid request MAY have "nonce" parameter
+        nonce = request.data.get('nonce')
+        auth_code = AuthorizationCode(
+            code=code,
+            client_id=request.client.client_id,
+            redirect_uri=request.redirect_uri,
+            scope=request.scope,
+            user_id=request.user.id,
+            nonce=nonce,
+        )
+        db.session.add(auth_code)
+        db.session.commit()
+        return auth_code
+
+class OpenIDCode(oidc_grants.OpenIDCode):
+    def exists_nonce(self, nonce, request):
+        exists = AuthorizationCode.query.filter_by(
+            client_id=request.client_id, nonce=nonce
+        ).first()
+        return bool(exists)
+
+    def get_jwt_config(self, grant):
+        return {
+            'key': read_private_key_file(key_path),
+            'alg': 'RS512',
+            'iss': 'https://example.com',
+            'exp': 3600
+        }
+
+    def generate_user_info(self, user, scope):
+        user_info = UserInfo(sub=user.id, name=user.name)
+        if 'email' in scope:
+            user_info['email'] = user.email
+        return user_info
+
 
 def config_oauth(app):
     authorization.init_app(app)
@@ -91,6 +133,8 @@ def config_oauth(app):
     authorization.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
     authorization.register_grant(PasswordGrant)
     authorization.register_grant(RefreshTokenGrant)
+    # OIDC Connect
+    authorization.register_grant(OIDCAuthorizationCodeGrant, [OpenIDCode(require_nonce=True)])
 
     # support revocation
     revocation_cls = create_revocation_endpoint(db.session, OAuth2Token)
