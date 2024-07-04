@@ -1,3 +1,3 @@
-Flask
-Flask-SQLAlchemy
-Authlib
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Authlib==1.3.1
