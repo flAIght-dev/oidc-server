@@ -24,6 +24,7 @@ def split_by_crlf(s):
 
 @bp.route('/', methods=('GET', 'POST'))
 def home():
+    print("route /")
     if request.method == 'POST':
         username = request.form.get('username')
         user = User.query.filter_by(username=username).first()
@@ -48,12 +49,14 @@ def home():
 
 @bp.route('/logout')
 def logout():
+    print("route /logout")
     del session['id']
     return redirect('/')
 
 
 @bp.route('/create_client', methods=('GET', 'POST'))
 def create_client():
+    print("route /create_client")
     user = current_user()
     if not user:
         return redirect('/')
@@ -92,6 +95,7 @@ def create_client():
 
 @bp.route('/oauth/authorize', methods=['GET', 'POST'])
 def authorize():
+    print("route /oauth/authorize")
     user = current_user()
     # if user log status is not true (Auth server), then to log it in
     if not user:
@@ -114,16 +118,19 @@ def authorize():
 
 @bp.route('/oauth/token', methods=['POST'])
 def issue_token():
+    print("route /oauth/token")
     return authorization.create_token_response()
 
 
 @bp.route('/oauth/revoke', methods=['POST'])
 def revoke_token():
+    print("route /oauth/revoke")
     return authorization.create_endpoint_response('revocation')
 
 
 @bp.route('/api/me')
 @require_oauth('profile')
 def api_me():
+    print("route /api/me")
     user = current_token.user
     return jsonify(id=user.id, username=user.username)

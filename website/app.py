@@ -34,3 +34,6 @@ def setup_app(app):
         db.create_all()
     config_oauth(app)
     app.register_blueprint(bp, url_prefix='')
+
+    print("App ready")
+

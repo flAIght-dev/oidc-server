@@ -20,6 +20,9 @@ class User(db.Model):
         return self.id
 
     def check_password(self, password):
+
+        print(f"check_password for {self.id}/{self.username}: {password}")
+
         return password == 'valid'
 
 
