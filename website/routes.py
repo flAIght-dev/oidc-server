@@ -96,11 +96,8 @@ def read_public_key_file(path):
     with open(path, 'r') as f:
         return f.read()
 
-def read_private_key_file(path):
-    with open(path, 'r') as f:
-        return f.read()
 
-@app.route('/oauth/certs', methods=['GET'])
+@bp.route('/oauth/certs', methods=['GET'])
 def certs():
     public_key = read_public_key_file('public_key.pem')
     # Devi formattare la chiave pubblica nel formato JWKS
@@ -125,21 +122,34 @@ def authorize():
     user = current_user()
     # if user log status is not true (Auth server), then to log it in
     if not user:
+        print("not user")
         return redirect(url_for('home.home', next=request.url))
     if request.method == 'GET':
         try:
             grant = authorization.get_consent_grant(end_user=user)
         except OAuth2Error as error:
+            print("OAuth2Error", error)
             return error.error
+            print("return authorize.html")
         return render_template('authorize.html', user=user, grant=grant)
+
     if not user and 'username' in request.form:
         username = request.form.get('username')
         user = User.query.filter_by(username=username).first()
+    else:
+        print("no username")
+
     if request.form['confirm']:
+        print("confirm ok")
         grant_user = user
     else:
+        print("no confirm")
         grant_user = None
-    return authorization.create_authorization_response(grant_user=grant_user)
+
+    print("grant user...")
+    res = authorization.create_authorization_response(grant_user=grant_user)
+    print("grant user done", res)
+    return res
 
 
 @bp.route('/oauth/token', methods=['POST'])

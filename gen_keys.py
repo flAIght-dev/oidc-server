@@ -21,4 +21,3 @@ with open('jwks.json', 'w') as f:
     f.write(jwks.export(private_keys=False))
 
 print("JWKS generated and saved to 'jwks.json'")
-

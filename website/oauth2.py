@@ -74,6 +74,51 @@ class PasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
         if user is not None and user.check_password(password):
             return user
 
+class CustomPasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
+    def authenticate_user(self, username, password):
+
+        print(f"CustomPasswordGrant.authenticate_user: {username}: {password}")
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            return user
+
+    def create_access_token(self, token, client, user):
+
+        print(f"CustomPasswordGrant.create_access_token: {token}")
+
+        header = {'alg': 'RS256'}
+        payload = {
+            'iss': 'https://example.com',
+            'sub': str(user.id),
+            'aud': client.client_id,
+            'iat': int(time.time()),
+            'exp': int(time.time()) + 3600,
+        }
+        jwt_token = jwt.JWT(header=header, claims=payload)
+        jwt_token.make_signed_token(key)
+        return jwt_token.serialize()
+
+    def save_bearer_token(self, token, request):
+
+        print(f"CustomPasswordGrant.save_bearer_token: {token}")
+
+        client = request.client
+        user = request.user
+        access_token = self.create_access_token(token, client, user)
+        token['access_token'] = access_token
+
+        item = OAuth2Token(
+            client_id=client.client_id,
+            user_id=user.id,
+            **token
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        return token
+
+
 
 class RefreshTokenGrant(grants.RefreshTokenGrant):
     def authenticate_refresh_token(self, refresh_token):
@@ -118,7 +163,7 @@ class OIDCAuthorizationCodeGrant(AuthorizationCodeGrant):
 
         # openid request MAY have "nonce" parameter
         nonce = request.data.get('nonce')
-        auth_code = AuthorizationCode(
+        auth_code = OAuth2AuthorizationCode(
             code=code,
             client_id=request.client.client_id,
             redirect_uri=request.redirect_uri,
@@ -130,13 +175,27 @@ class OIDCAuthorizationCodeGrant(AuthorizationCodeGrant):
         db.session.commit()
         return auth_code
 
+    def query_authorization_code(self, code, client):
+
+        print(f"OIDCAuthorizationCodeGrant.query_authorization_code: {code}")
+
+        auth_code = OAuth2AuthorizationCode.query.filter_by(
+            code=code, client_id=client.client_id).first()
+        if auth_code and not auth_code.is_expired():
+            return auth_code
+
+def read_private_key_file(path):
+    with open(path, 'r') as f:
+        return f.read()
+
+
 class OpenIDCode(oidc_grants.OpenIDCode):
 
     def exists_nonce(self, nonce, request):
 
         print(f"OpenIDCode.exists_nonce: {nonce}")
 
-        exists = AuthorizationCode.query.filter_by(
+        exists = OAuth2AuthorizationCode.query.filter_by(
             client_id=request.client_id, nonce=nonce
         ).first()
         return bool(exists)
@@ -152,11 +211,36 @@ class OpenIDCode(oidc_grants.OpenIDCode):
             'exp': 3600
         }
 
+    def zzz_process_token(self, grant, token):
+        print(f"OpenIDCode.process_token: {grant} : {token}")
+
+        scope = token.get('scope')
+        print(f"OpenIDCode.process_token scope: {scope}")
+        if not scope or not is_openid_scope(scope):
+            # standard authorization code flow
+            print(f"OpenIDCode.process_token: standard authorization code flow")
+            return token
+
+        request: OAuth2Request = grant.request
+        authorization_code = request.authorization_code
+
+        config = self.get_jwt_config(grant)
+        config['aud'] = self.get_audiences(request)
+
+        if authorization_code:
+            config['nonce'] = authorization_code.get_nonce()
+            config['auth_time'] = authorization_code.get_auth_time()
+
+        user_info = self.generate_user_info(request.user, token['scope'])
+        id_token = generate_id_token(token, user_info, **config)
+        token['id_token'] = id_token
+        return token
+
     def generate_user_info(self, user, scope):
 
-        print(f"OpenIDCode.generate_user_info: {user}, scope: {scope}")
+        print(f"OpenIDCode.generate_user_info: {user} {type(user)}, scope: {scope}")
 
-        user_info = UserInfo(sub=user.id, name=user.name)
+        user_info = UserInfo(sub=user.get_user_id(), name=user.get_user_username())
         if 'email' in scope:
             user_info['email'] = user.email
         return user_info
@@ -171,11 +255,13 @@ def config_oauth(app):
     # support all grants
     authorization.register_grant(grants.ImplicitGrant)
     authorization.register_grant(grants.ClientCredentialsGrant)
-    authorization.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
-    authorization.register_grant(PasswordGrant)
+    #authorization.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
+    #authorization.register_grant(PasswordGrant)
+    authorization.register_grant(CustomPasswordGrant)
+
     authorization.register_grant(RefreshTokenGrant)
     # OIDC Connect
-    authorization.register_grant(OIDCAuthorizationCodeGrant, [OpenIDCode(require_nonce=True)])
+    authorization.register_grant(OIDCAuthorizationCodeGrant, [CodeChallenge(required=True), OpenIDCode(require_nonce=True)])
 
     # support revocation
     revocation_cls = create_revocation_endpoint(db.session, OAuth2Token)
