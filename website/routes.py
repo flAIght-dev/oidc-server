@@ -92,6 +92,32 @@ def create_client():
     db.session.commit()
     return redirect('/')
 
+def read_public_key_file(path):
+    with open(path, 'r') as f:
+        return f.read()
+
+def read_private_key_file(path):
+    with open(path, 'r') as f:
+        return f.read()
+
+@app.route('/oauth/certs', methods=['GET'])
+def certs():
+    public_key = read_public_key_file('public_key.pem')
+    # Devi formattare la chiave pubblica nel formato JWKS
+    jwks = {
+        "keys": [
+            {
+                "kty": "RSA",
+                "alg": "RS256",
+                "use": "sig",
+                "kid": "your-key-id",  # Dovresti avere un key ID unico per la tua chiave
+                "n": public_key,  # L'esponente della chiave pubblica
+                "e": "AQAB"  # L'esponente pubblico comune
+            }
+        ]
+    }
+    return jsonify(jwks)
+
 
 @bp.route('/oauth/authorize', methods=['GET', 'POST'])
 def authorize():
