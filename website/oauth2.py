@@ -74,6 +74,42 @@ class PasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
         if user is not None and user.check_password(password):
             return user
 
+class CustomPasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
+    def authenticate_user(self, username, password):
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            return user
+
+    def create_access_token(self, token, client, user):
+        header = {'alg': 'RS256'}
+        payload = {
+            'iss': 'https://example.com',
+            'sub': str(user.id),
+            'aud': client.client_id,
+            'iat': int(time.time()),
+            'exp': int(time.time()) + 3600,
+        }
+        jwt_token = jwt.JWT(header=header, claims=payload)
+        jwt_token.make_signed_token(key)
+        return jwt_token.serialize()
+
+    def save_bearer_token(self, token, request):
+        client = request.client
+        user = request.user
+        access_token = self.create_access_token(token, client, user)
+        token['access_token'] = access_token
+
+        item = OAuth2Token(
+            client_id=client.client_id,
+            user_id=user.id,
+            **token
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        return token
+
+
 
 class RefreshTokenGrant(grants.RefreshTokenGrant):
     def authenticate_refresh_token(self, refresh_token):
@@ -172,7 +208,9 @@ def config_oauth(app):
     authorization.register_grant(grants.ImplicitGrant)
     authorization.register_grant(grants.ClientCredentialsGrant)
     authorization.register_grant(AuthorizationCodeGrant, [CodeChallenge(required=True)])
-    authorization.register_grant(PasswordGrant)
+    #authorization.register_grant(PasswordGrant)
+    authorization.register_grant(CustomPasswordGrant)
+
     authorization.register_grant(RefreshTokenGrant)
     # OIDC Connect
     authorization.register_grant(OIDCAuthorizationCodeGrant, [OpenIDCode(require_nonce=True)])
