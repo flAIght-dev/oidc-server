@@ -146,7 +146,7 @@ class OpenIDCode(oidc_grants.OpenIDCode):
         print(f"OpenIDCode.get_jwt_config: {grant}")
 
         return {
-            'key': read_private_key_file(key_path),
+            'key': read_private_key_file('private_key.pem'),
             'alg': 'RS512',
             'iss': 'https://example.com',
             'exp': 3600
