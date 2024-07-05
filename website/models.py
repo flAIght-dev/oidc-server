@@ -19,6 +19,9 @@ class User(db.Model):
     def get_user_id(self):
         return self.id
 
+    def get_user_username(self):
+        return self.username
+
     def check_password(self, password):
 
         print(f"check_password for {self.id}/{self.username}: {password}")
