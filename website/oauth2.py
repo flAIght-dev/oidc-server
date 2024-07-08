@@ -89,7 +89,7 @@ class CustomPasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
 
         header = {'alg': 'RS256'}
         payload = {
-            'iss': 'https://example.com',
+            'iss': 'http://api.dizme.org:5000/',
             'sub': str(user.id),
             'aud': client.client_id,
             'iat': int(time.time()),
@@ -204,15 +204,26 @@ class OpenIDCode(oidc_grants.OpenIDCode):
 
         print(f"OpenIDCode.get_jwt_config: {grant}")
 
+        from authlib.jose import JsonWebKey, jwt
+
+        key_data = read_private_key_file('private_key.pem')
+        key = JsonWebKey.import_key(key_data, {'kid', 'ca601602011de5be805cd62051984'})
+
         return {
-            'key': read_private_key_file('private_key.pem'),
-            'alg': 'RS512',
-            'iss': 'https://example.com',
-            'exp': 3600
+            'key': key,
+            'alg': 'RS256',
+            'iss': 'http://api.dizme.org:5000/',
+            'exp': 36000
         }
 
-    def zzz_process_token(self, grant, token):
+    def process_token(self, grant, token):
+
         print(f"OpenIDCode.process_token: {grant} : {token}")
+
+        token = super().process_token(self, grant, token)
+
+        token['id_token']['kid'] = ''
+
 
         scope = token.get('scope')
         print(f"OpenIDCode.process_token scope: {scope}")
