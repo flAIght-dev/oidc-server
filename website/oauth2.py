@@ -207,11 +207,11 @@ class OpenIDCode(oidc_grants.OpenIDCode):
         from authlib.jose import JsonWebKey, jwt
 
         key_data = read_private_key_file('private_key.pem')
-        key = JsonWebKey.import_key(key_data, {'kid', 'ca601602011de5be805cd62051984'})
+        key = JsonWebKey.import_key(key_data, {'kty': 'RSA', 'kid': 'ca601602011de5be805cd62051984'})
 
         return {
             'key': key,
-            'alg': 'RS256',
+            'alg': 'RS512',
             'iss': 'http://api.dizme.org:5000/',
             'exp': 36000
         }
