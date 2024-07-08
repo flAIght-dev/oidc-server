@@ -204,11 +204,16 @@ class OpenIDCode(oidc_grants.OpenIDCode):
 
         print(f"OpenIDCode.get_jwt_config: {grant}")
 
+        from authlib.jose import JsonWebKey, jwt
+
+        key_data = read_private_key_file('private_key.pem')
+        key = JsonWebKey.import_key(key_data, {'kty': 'RSA', 'kid': 'ca601602011de5be805cd62051984'})
+
         return {
-            'key': read_private_key_file('private_key.pem'),
+            'key': key,
             'alg': 'RS512',
-            'iss': 'https://example.com',
-            'exp': 3600
+            'iss': 'http://api.dizme.org:5000/',
+            'exp': 36000
         }
 
     def zzz_process_token(self, grant, token):

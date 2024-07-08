@@ -94,11 +94,19 @@ def create_client():
 
 def read_public_key_file(path):
     with open(path, 'r') as f:
-        return f.read()
-
+        key = f.read()
+    # Rimuovi le intestazioni e le interruzioni di riga
+    key = key.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '').replace('\n', '')
+    return key
 
 @bp.route('/oauth/certs', methods=['GET'])
 def certs():
+    import json
+
+    with open('jwks.json', 'r') as f:
+        jwks = json.load(f)
+    return jsonify(jwks)
+
     public_key = read_public_key_file('public_key.pem')
     # Devi formattare la chiave pubblica nel formato JWKS
     jwks = {
