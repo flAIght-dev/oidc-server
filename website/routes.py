@@ -22,9 +22,9 @@ def split_by_crlf(s):
     return [v for v in s.splitlines() if v]
 
 
-@bp.route('/', methods=('GET', 'POST'))
+@bp.route('/oauth/', methods=('GET', 'POST'))
 def home():
-    print("route /")
+    print("route /oauth/")
     if request.method == 'POST':
         username = request.form.get('username')
         user = User.query.filter_by(username=username).first()
@@ -37,7 +37,7 @@ def home():
         next_page = request.args.get('next')
         if next_page:
             return redirect(next_page)
-        return redirect('/')
+        return redirect('/oauth/')
     user = current_user()
     if user:
         clients = OAuth2Client.query.filter_by(user_id=user.id).all()
@@ -47,19 +47,19 @@ def home():
     return render_template('home.html', user=user, clients=clients)
 
 
-@bp.route('/logout')
+@bp.route('/oauth/logout')
 def logout():
     print("route /logout")
     del session['id']
-    return redirect('/')
+    return redirect('/oauth/')
 
 
-@bp.route('/create_client', methods=('GET', 'POST'))
+@bp.route('/oauth/create_client', methods=('GET', 'POST'))
 def create_client():
     print("route /create_client")
     user = current_user()
     if not user:
-        return redirect('/')
+        return redirect('/oauth/')
     if request.method == 'GET':
         return render_template('create_client.html')
 
@@ -90,7 +90,7 @@ def create_client():
 
     db.session.add(client)
     db.session.commit()
-    return redirect('/')
+    return redirect('/oauth/')
 
 def read_public_key_file(path):
     with open(path, 'r') as f:
@@ -169,7 +169,7 @@ def revoke_token():
     return authorization.create_endpoint_response('revocation')
 
 
-@bp.route('/api/me')
+@bp.route('/oauth/me')
 @require_oauth('profile')
 def api_me():
     print("route /api/me")
