@@ -96,30 +96,27 @@ def read_public_key_file(path):
     with open(path, 'r') as f:
         key = f.read()
     # Rimuovi le intestazioni e le interruzioni di riga
-    key = key.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '').replace('\n', '')
+    #key = key.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '').replace('\n', '')
     return key
 
 @bp.route('/oauth/certs', methods=['GET'])
 def certs():
     import json
 
-    with open('jwks.json', 'r') as f:
-        jwks = json.load(f)
-    return jsonify(jwks)
+    #with open('jwks.json', 'r') as f:
+    #    jwks = json.load(f)
+    #return jsonify(jwks)
+    from authlib.jose import JsonWebKey, jwt
 
-    public_key = read_public_key_file('public_key.pem')
+    key_data = read_public_key_file('public_key.pem')
+    tmp_key = JsonWebKey.import_key(key_data, {'kty': 'RSA', 'kid': 'TEMP_KEY'})   # just to compute the thumbprint
+    key = JsonWebKey.import_key(tmp_key.as_bytes(), {'kty': 'RSA', 'alg': 'RS256', 
+                                                        'use': 'sig', 'ext': True,
+                                                        'kid': tmp_key.thumbprint()})
+
     # Devi formattare la chiave pubblica nel formato JWKS
     jwks = {
-        "keys": [
-            {
-                "kty": "RSA",
-                "alg": "RS256",
-                "use": "sig",
-                "kid": "your-key-id",  # Dovresti avere un key ID unico per la tua chiave
-                "n": public_key,  # L'esponente della chiave pubblica
-                "e": "AQAB"  # L'esponente pubblico comune
-            }
-        ]
+        "keys": [key.as_dict()]
     }
     return jsonify(jwks)
 

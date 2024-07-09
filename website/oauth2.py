@@ -206,17 +206,20 @@ class OpenIDCode(oidc_grants.OpenIDCode):
 
         from authlib.jose import JsonWebKey, jwt
 
-        key_data = read_private_key_file('private_key.pem')
-        key = JsonWebKey.import_key(key_data, {'kty': 'RSA', 'kid': 'ca601602011de5be805cd62051984'})
+        key_data = read_public_key_file('public_key.pem')
+        tmp_key = JsonWebKey.import_key(key_data, {'kty': 'RSA', 'kid': 'TEMP_KEY'})   # just to compute the thumbprint
+
+        private_key_data = read_private_key_file('private_key.pem')
+        private_key = JsonWebKey.import_key(private_key_data, {'kty': 'RSA', 'kid': tmp_key.thumbprint()})
 
         return {
-            'key': key,
-            'alg': 'RS512',
+            'key': private_key,
+            'alg': 'RS256',
             'iss': 'http://api.dizme.org:5000/',
             'exp': 36000
         }
 
-    def process_token(self, grant, token):
+    def zzz_process_token(self, grant, token):
 
         print(f"OpenIDCode.process_token: {grant} : {token}")
 
