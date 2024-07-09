@@ -211,12 +211,12 @@ class OpenIDCode(oidc_grants.OpenIDCode):
 
         return {
             'key': key,
-            'alg': 'RS512',
+            'alg': 'RS256',
             'iss': 'http://api.dizme.org:5000/',
             'exp': 36000
         }
 
-    def process_token(self, grant, token):
+    def zzz_process_token(self, grant, token):
 
         print(f"OpenIDCode.process_token: {grant} : {token}")
 
