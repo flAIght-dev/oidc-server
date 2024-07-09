@@ -188,6 +188,12 @@ def read_private_key_file(path):
     with open(path, 'r') as f:
         return f.read()
 
+def read_public_key_file(path):
+    with open(path, 'r') as f:
+        key = f.read()
+    # Rimuovi le intestazioni e le interruzioni di riga
+    #key = key.replace('-----BEGIN PUBLIC KEY-----', '').replace('-----END PUBLIC KEY-----', '').replace('\n', '')
+    return key
 
 class OpenIDCode(oidc_grants.OpenIDCode):
 
