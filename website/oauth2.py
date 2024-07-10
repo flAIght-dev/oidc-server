@@ -13,6 +13,7 @@ from authlib.oauth2.rfc7636 import CodeChallenge
 from .models import db, User
 from .models import OAuth2Client, OAuth2AuthorizationCode, OAuth2Token
 
+ISSUER='https://api.dizme.org/'
 
 class AuthorizationCodeGrant(grants.AuthorizationCodeGrant):
     TOKEN_ENDPOINT_AUTH_METHODS = [
@@ -89,7 +90,7 @@ class CustomPasswordGrant(grants.ResourceOwnerPasswordCredentialsGrant):
 
         header = {'alg': 'RS256'}
         payload = {
-            'iss': 'http://api.dizme.org:5000/',
+            'iss': ISSUER,
             'sub': str(user.id),
             'aud': client.client_id,
             'iat': int(time.time()),
@@ -221,7 +222,7 @@ class OpenIDCode(oidc_grants.OpenIDCode):
         return {
             'key': private_key,
             'alg': 'RS256',
-            'iss': 'http://api.dizme.org:5000/',
+            'iss': ISSUER,
             'exp': 36000
         }
 

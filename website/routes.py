@@ -136,13 +136,15 @@ def authorize():
             print("OAuth2Error", error)
             return error.error
             print("return authorize.html")
+        print("User is logged in, go to grant page", user, grant)
         return render_template('authorize.html', user=user, grant=grant)
 
     if not user and 'username' in request.form:
         username = request.form.get('username')
+        print("received user", username)
         user = User.query.filter_by(username=username).first()
     else:
-        print("no username")
+        print("logged in as:", user)
 
     if request.form['confirm']:
         print("confirm ok")
@@ -151,7 +153,7 @@ def authorize():
         print("no confirm")
         grant_user = None
 
-    print("grant user...")
+    print("grant user...", grant_user)
     res = authorization.create_authorization_response(grant_user=grant_user)
     print("grant user done", res)
     return res
@@ -160,13 +162,17 @@ def authorize():
 @bp.route('/oauth/token', methods=['POST'])
 def issue_token():
     print("route /oauth/token")
-    return authorization.create_token_response()
+    res = authorization.create_token_response()
+    print("result", res)
+    return res
 
 
 @bp.route('/oauth/revoke', methods=['POST'])
 def revoke_token():
     print("route /oauth/revoke")
-    return authorization.create_endpoint_response('revocation')
+    res = authorization.create_endpoint_response('revocation')
+    print("result", res)
+    return res
 
 
 @bp.route('/oauth/me')
